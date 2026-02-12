@@ -73,10 +73,39 @@ mod tests {
 
     #[test]
     fn json_parse_ok() {
-        let formatted = parse_json::<JsonValue>(JSON_FIXTURE, None).unwrap();
+        #[derive(Debug, serde::Deserialize)]
+        struct Types {
+            boolean: bool,
+            integer: i64,
+            float: f64,
+            string: String,
+            array: Vec<i64>,
+            object: serde_json::Value,
+            null: Option<serde_json::Value>,
+            date: String,
+        }
+
+        #[derive(Debug, serde::Deserialize)]
+        struct Root {
+            types: Types,
+        }
+
+        let formatted = parse_json::<Root>(JSON_FIXTURE, None).unwrap();
+
+        // 对每一个字段单独断言，确保结构体里的所有值都解析正确。
+        assert!(formatted.value.types.boolean);
+        assert_eq!(formatted.value.types.integer, 1);
+        assert!((formatted.value.types.float - 3.14).abs() < f64::EPSILON);
+        assert_eq!(formatted.value.types.string, "hello");
+        assert_eq!(formatted.value.types.array, vec![1, 2, 3]);
         assert_eq!(
-            formatted.value["types"]["string"].as_str().unwrap(),
-            "hello"
+            formatted.value.types.object["key"].as_str(),
+            Some("value")
+        );
+        assert!(formatted.value.types.null.is_none());
+        assert_eq!(
+            formatted.value.types.date,
+            "1979-05-27T07:32:00-08:00".to_string()
         );
     }
 
