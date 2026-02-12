@@ -1,8 +1,8 @@
-# packageName
+# c12-parser
 
-![Crates.io Version](https://img.shields.io/crates/v/packageName)
-![Crates.io Total Downloads](https://img.shields.io/crates/d/packageName)
-![Crates.io License](https://img.shields.io/crates/l/packageName)
+![Crates.io Version](https://img.shields.io/crates/v/c12-parser)
+![Crates.io Total Downloads](https://img.shields.io/crates/d/c12-parser)
+![Crates.io License](https://img.shields.io/crates/l/c12-parser)
 
 ## Contribution
 
