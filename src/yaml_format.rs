@@ -115,7 +115,9 @@ types:
         );
         assert_eq!(
             types.get(&serde_yaml::Value::String("date".into())),
-            Some(&serde_yaml::Value::String("1979-05-27T15:32:00.000Z".into()))
+            Some(&serde_yaml::Value::String(
+                "1979-05-27T15:32:00.000Z".into()
+            ))
         );
     }
 

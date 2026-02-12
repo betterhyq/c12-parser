@@ -181,4 +181,3 @@ mod tests {
         assert_eq!(compute_indent(&info, &opts), 2);
     }
 }
-

@@ -60,14 +60,8 @@ date = 1979-05-27T15:32:00.000Z
             types.get("boolean").and_then(|v| v.as_deref()),
             Some("true")
         );
-        assert_eq!(
-            types.get("integer").and_then(|v| v.as_deref()),
-            Some("1")
-        );
-        assert_eq!(
-            types.get("float").and_then(|v| v.as_deref()),
-            Some("3.14")
-        );
+        assert_eq!(types.get("integer").and_then(|v| v.as_deref()), Some("1"));
+        assert_eq!(types.get("float").and_then(|v| v.as_deref()), Some("3.14"));
         assert_eq!(
             types.get("string").and_then(|v| v.as_deref()),
             Some("hello")
@@ -98,6 +92,9 @@ key2 = value2
 
         assert!(map.contains_key("default"));
         let default = &map["default"];
-        assert_eq!(default.get("key1").and_then(|v| v.as_deref()), Some("value1"));
+        assert_eq!(
+            default.get("key1").and_then(|v| v.as_deref()),
+            Some("value1")
+        );
     }
 }

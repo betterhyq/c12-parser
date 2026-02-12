@@ -98,10 +98,7 @@ mod tests {
         assert!((formatted.value.types.float - 3.14).abs() < f64::EPSILON);
         assert_eq!(formatted.value.types.string, "hello");
         assert_eq!(formatted.value.types.array, vec![1, 2, 3]);
-        assert_eq!(
-            formatted.value.types.object["key"].as_str(),
-            Some("value")
-        );
+        assert_eq!(formatted.value.types.object["key"].as_str(), Some("value"));
         assert!(formatted.value.types.null.is_none());
         assert_eq!(
             formatted.value.types.date,

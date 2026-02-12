@@ -88,26 +88,19 @@ mod tests {
 
     #[test]
     fn jsonc_parse_ok() {
-        let formatted = parse_jsonc(JSONC_FIXTURE, None, None)
-            .unwrap()
-            .value;
+        let formatted = parse_jsonc(JSONC_FIXTURE, None, None).unwrap().value;
 
         let types = &formatted["types"];
 
         // 对每一个字段单独断言，直接基于 formatted 做检查。
         assert_eq!(types["boolean"], JsonValue::Bool(true));
         assert_eq!(types["integer"], JsonValue::from(1));
-        assert!(
-            (types["float"].as_f64().unwrap() - 3.14).abs() < f64::EPSILON
-        );
+        assert!((types["float"].as_f64().unwrap() - 3.14).abs() < f64::EPSILON);
         assert_eq!(types["string"], JsonValue::from("hello"));
         assert_eq!(types["array"], JsonValue::from(vec![1, 2, 3]));
         assert_eq!(types["object"]["key"], JsonValue::from("value"));
         assert!(types["null"].is_null());
-        assert_eq!(
-            types["date"],
-            JsonValue::from("1979-05-27T07:32:00-08:00")
-        );
+        assert_eq!(types["date"], JsonValue::from("1979-05-27T07:32:00-08:00"));
     }
 
     #[test]
@@ -132,7 +125,10 @@ mod tests {
         };
 
         let result = parse_jsonc(JSONC_FIXTURE, None, Some(opts));
-        assert!(result.is_err(), "expected error when comments are disallowed");
+        assert!(
+            result.is_err(),
+            "expected error when comments are disallowed"
+        );
     }
 
     #[test]
