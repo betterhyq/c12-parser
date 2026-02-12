@@ -5,18 +5,14 @@ use std::fmt::Write as _;
 /// `HashMap<section, HashMap<key, Option<value>>>`.
 ///
 /// Style/indentation are not preserved.
-pub fn parse_ini(
-    text: &str,
-) -> HashMap<String, HashMap<String, Option<String>>> {
+pub fn parse_ini(text: &str) -> HashMap<String, HashMap<String, Option<String>>> {
     ini::inistr!(text)
 }
 
 /// Stringifies an INI-like nested map back into INI text.
 ///
 /// Note: This does **not** preserve exact original formatting.
-pub fn stringify_ini(
-    map: &HashMap<String, HashMap<String, Option<String>>>,
-) -> String {
+pub fn stringify_ini(map: &HashMap<String, HashMap<String, Option<String>>>) -> String {
     let mut out = String::new();
     for (section, kv) in map {
         if section.to_lowercase() != "default" {
@@ -59,7 +55,10 @@ date = 1979-05-27T15:32:00.000Z
         let map = parse_ini(INI_FIXTURE);
         assert!(map.contains_key("types"));
         let types = &map["types"];
-        assert_eq!(types.get("string").and_then(|v| v.as_deref()), Some("hello"));
+        assert_eq!(
+            types.get("string").and_then(|v| v.as_deref()),
+            Some("hello")
+        );
     }
 
     #[test]
@@ -73,5 +72,3 @@ date = 1979-05-27T15:32:00.000Z
         assert_eq!(reparsed, map);
     }
 }
-
-

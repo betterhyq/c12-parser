@@ -1,4 +1,4 @@
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 
 use crate::format::{FormatOptions, Formatted};
 
@@ -102,5 +102,3 @@ key = "value"
         assert_eq!(out_val, expected_val);
     }
 }
-
-

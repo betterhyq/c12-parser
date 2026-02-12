@@ -1,4 +1,4 @@
-use jsonc_parser::{parse_to_serde_value, ParseOptions as JsoncParseOptions};
+use jsonc_parser::{ParseOptions as JsoncParseOptions, parse_to_serde_value};
 use serde_json::Value as JsonValue;
 
 use crate::format::{FormatOptions, Formatted};
@@ -106,5 +106,3 @@ mod tests {
         assert_eq!(out_val, expected_val);
     }
 }
-
-

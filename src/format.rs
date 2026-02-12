@@ -42,11 +42,7 @@ impl Default for FormatOptions {
 
 pub(crate) fn detect_format(text: &str, opts: &FormatOptions) -> FormatInfo {
     let sample = if opts.indent.is_none() && opts.preserve_indentation {
-        Some(
-            text.chars()
-                .take(opts.sample_size)
-                .collect::<String>(),
-        )
+        Some(text.chars().take(opts.sample_size).collect::<String>())
     } else {
         None
     };
@@ -116,4 +112,3 @@ impl<T> Formatted<T> {
         Self { value, format }
     }
 }
-

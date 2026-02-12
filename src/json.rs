@@ -1,6 +1,6 @@
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 
-use crate::format::{compute_indent, FormatOptions, Formatted};
+use crate::format::{FormatOptions, Formatted, compute_indent};
 
 /// Parses a JSON string into a value, capturing its formatting.
 pub fn parse_json<T>(text: &str, options: Option<FormatOptions>) -> serde_json::Result<Formatted<T>>
@@ -111,5 +111,3 @@ mod tests {
         assert_eq!(out_val, expected_val);
     }
 }
-
-

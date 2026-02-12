@@ -1,7 +1,7 @@
 use json5 as json5_crate;
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 
-use crate::format::{compute_indent, FormatOptions, Formatted};
+use crate::format::{FormatOptions, Formatted, compute_indent};
 
 /// Parses a JSON5 string into a value, capturing its formatting.
 pub fn parse_json5<T>(
@@ -88,5 +88,3 @@ mod tests {
         assert_eq!(out.trim(), expected_str.trim());
     }
 }
-
-

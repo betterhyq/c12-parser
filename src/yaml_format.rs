@@ -1,4 +1,4 @@
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 
 use crate::format::{FormatOptions, Formatted};
 
@@ -33,9 +33,7 @@ where
 
     Ok(format!(
         "{}{}{}",
-        formatted.format.whitespace_start,
-        yaml_str,
-        formatted.format.whitespace_end
+        formatted.format.whitespace_start, yaml_str, formatted.format.whitespace_end
     ))
 }
 
@@ -107,5 +105,3 @@ types:
         assert_eq!(out_val, expected_val);
     }
 }
-
-
