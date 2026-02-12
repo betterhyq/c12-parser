@@ -74,10 +74,49 @@ types:
     #[test]
     fn yaml_parse_ok() {
         let formatted = parse_yaml::<serde_yaml::Value>(YAML_FIXTURE, None).unwrap();
-        let expected: serde_yaml::Value = serde_yaml::from_str(YAML_FIXTURE).unwrap();
+        let root = formatted.value;
 
-        // Compare the full YAML value so that every field in the fixture is validated.
-        assert_eq!(formatted.value, expected);
+        // Manually verify each field under `types` instead of using `serde_yaml::from_str`
+        // to build the expected value.
+        let types = root
+            .get("types")
+            .expect("types key should exist")
+            .as_mapping()
+            .expect("types should be a mapping");
+
+        assert_eq!(
+            types.get(&serde_yaml::Value::String("boolean".into())),
+            Some(&serde_yaml::Value::Bool(true))
+        );
+        assert_eq!(
+            types.get(&serde_yaml::Value::String("integer".into())),
+            Some(&serde_yaml::Value::Number(1.into()))
+        );
+        assert_eq!(
+            types.get(&serde_yaml::Value::String("float".into())),
+            Some(&serde_yaml::Value::Number(serde_yaml::Number::from(3.14)))
+        );
+        assert_eq!(
+            types.get(&serde_yaml::Value::String("string".into())),
+            Some(&serde_yaml::Value::String("hello".into()))
+        );
+        assert_eq!(
+            types.get(&serde_yaml::Value::String("array".into())),
+            Some(&serde_yaml::Value::Sequence(vec![
+                serde_yaml::Value::Number(1.into()),
+                serde_yaml::Value::Number(2.into()),
+                serde_yaml::Value::Number(3.into()),
+            ]))
+        );
+        // `'null'` is a string key whose value is YAML null.
+        assert_eq!(
+            types.get(&serde_yaml::Value::String("null".into())),
+            Some(&serde_yaml::Value::Null)
+        );
+        assert_eq!(
+            types.get(&serde_yaml::Value::String("date".into())),
+            Some(&serde_yaml::Value::String("1979-05-27T15:32:00.000Z".into()))
+        );
     }
 
     #[test]
