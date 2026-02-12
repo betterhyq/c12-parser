@@ -4,6 +4,8 @@
 ![Crates.io Total Downloads](https://img.shields.io/crates/d/c12-parser)
 ![Crates.io License](https://img.shields.io/crates/l/c12-parser)
 
+`c12-parser` is a parser for C12 configuration files, support JSON, JSON5, JSONC, YAML, TOML, INI.
+
 ## Installation
 
 Add this crate by cargo
@@ -62,6 +64,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 - Run tests using `cargo test` or `cargo run`
 
 </details>
+
+## Credits
+
+`c12-loader` has been inspired by several outstanding projects in the community:
+
+- [@confbox](https://github.com/unjs/confbox) - Compact YAML, TOML, JSONC and JSON5 and INI parser and serializer
 
 ## License
 
