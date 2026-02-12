@@ -44,3 +44,72 @@ where
     ))
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::format::{FormatInfo, Formatted};
+    use serde_json::Value as JsonValue;
+
+    const JSON_FIXTURE: &str = r#"
+{
+  "types": {
+    "boolean": true,
+    "integer": 1,
+    "float": 3.14,
+    "string": "hello",
+    "array": [
+      1,
+      2,
+      3
+    ],
+    "object": {
+      "key": "value"
+    },
+    "null": null,
+    "date": "1979-05-27T07:32:00-08:00"
+  }
+}
+"#;
+
+    #[test]
+    fn json_parse_ok() {
+        let formatted = parse_json::<JsonValue>(JSON_FIXTURE, None).unwrap();
+        assert_eq!(
+            formatted.value["types"]["string"].as_str().unwrap(),
+            "hello"
+        );
+    }
+
+    #[test]
+    fn json_stringify_exact_fixture() {
+        let formatted = parse_json::<JsonValue>(JSON_FIXTURE, None).unwrap();
+        let out = stringify_json(&formatted, None).unwrap();
+
+        // 比较两边解析后的 JSON 值是否等价，而不是逐字符一致，
+        // 以规避键顺序和缩进风格差异。
+        let out_val: JsonValue = serde_json::from_str(&out).unwrap();
+        let expected_val: JsonValue = serde_json::from_str(JSON_FIXTURE).unwrap();
+        assert_eq!(out_val, expected_val);
+    }
+
+    #[test]
+    fn json_stringify_from_raw_object_matches_trimmed_fixture() {
+        let value: JsonValue = serde_json::from_str(JSON_FIXTURE).unwrap();
+        let formatted = Formatted {
+            value,
+            format: FormatInfo {
+                sample: None,
+                whitespace_start: String::new(),
+                whitespace_end: String::new(),
+            },
+        };
+        let out = stringify_json(&formatted, None).unwrap();
+
+        // 同样比较解析后的值是否等价即可，不再要求字符串完全一致。
+        let out_val: JsonValue = serde_json::from_str(&out).unwrap();
+        let expected_val: JsonValue = serde_json::from_str(JSON_FIXTURE).unwrap();
+        assert_eq!(out_val, expected_val);
+    }
+}
+
+

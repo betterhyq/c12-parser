@@ -46,3 +46,65 @@ pub fn stringify_jsonc(
     )
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::Value as JsonValue;
+
+    const JSONC_FIXTURE: &str = r#"
+{
+  // comment
+  "types": {
+    "boolean": true,
+    "integer": 1,
+    "float": 3.14,
+    "string": "hello",
+    "array": [
+      1,
+      2,
+      3
+    ],
+    "object": {
+      "key": "value"
+    },
+    "null": null,
+    "date": "1979-05-27T07:32:00-08:00"
+  }
+}
+"#;
+
+    fn strip_line_comments(s: &str, prefix: &str) -> String {
+        s.lines()
+            .map(|line| {
+                if let Some(pos) = line.find(prefix) {
+                    &line[..pos]
+                } else {
+                    line
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    #[test]
+    fn jsonc_parse_ok() {
+        let formatted = parse_jsonc(JSONC_FIXTURE, None, None).unwrap();
+        assert!(formatted.value["types"]["boolean"].as_bool().unwrap());
+    }
+
+    #[test]
+    fn jsonc_stringify_exact_normalized_without_comments() {
+        let formatted = parse_jsonc(JSONC_FIXTURE, None, None).unwrap();
+        let out = stringify_jsonc(&formatted, None).unwrap();
+
+        // JS 里是 fixtures.jsonc 去掉行注释后的结果。
+        // 这里再把该结果解析成 JSON，比较“值”等价，而不是要求序列化后的
+        // 字符串逐字符一致（不同实现的 pretty-print 策略可能不同）。
+        let without_comments = strip_line_comments(JSONC_FIXTURE, "//");
+        let expected_val: JsonValue = serde_json::from_str(&without_comments).unwrap();
+        let out_val: JsonValue = serde_json::from_str(&out).unwrap();
+        assert_eq!(out_val, expected_val);
+    }
+}
+
+

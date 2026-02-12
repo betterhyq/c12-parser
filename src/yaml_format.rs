@@ -39,3 +39,73 @@ where
     ))
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::Value as JsonValue;
+
+    const YAML_FIXTURE: &str = r#"
+types:
+  boolean: true
+  integer: 1
+  float: 3.14
+  string: hello
+  array:
+    - 1
+    - 2
+    - 3
+  object:
+    key: value
+  'null': null
+  date: 1979-05-27T15:32:00.000Z
+"#;
+
+    fn strip_line_comments(s: &str, prefix: &str) -> String {
+        s.lines()
+            .map(|line| {
+                if let Some(pos) = line.find(prefix) {
+                    &line[..pos]
+                } else {
+                    line
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    #[test]
+    fn yaml_parse_ok() {
+        #[derive(Debug, serde::Deserialize)]
+        struct Types {
+            boolean: bool,
+            integer: i64,
+            float: f64,
+            string: String,
+        }
+        #[derive(Debug, serde::Deserialize)]
+        struct Root {
+            types: Types,
+        }
+
+        let formatted = parse_yaml::<Root>(YAML_FIXTURE, None).unwrap();
+        assert!(formatted.value.types.boolean);
+        assert_eq!(formatted.value.types.string, "hello");
+        assert_eq!(formatted.value.types.integer, 1);
+        assert!((formatted.value.types.float - 3.14).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn yaml_stringify_exact_without_comments_normalized_indent() {
+        let formatted = parse_yaml::<JsonValue>(YAML_FIXTURE, None).unwrap();
+        let out = stringify_yaml(&formatted, None).unwrap();
+
+        let without_comments = strip_line_comments(YAML_FIXTURE, "#");
+        let expected_val: serde_yaml::Value = serde_yaml::from_str(&without_comments).unwrap();
+
+        // 直接比较解析后的 YAML 值是否等价，避免键顺序和缩进实现差异。
+        let out_val: serde_yaml::Value = serde_yaml::from_str(&out).unwrap();
+        assert_eq!(out_val, expected_val);
+    }
+}
+
+

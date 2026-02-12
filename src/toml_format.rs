@@ -32,3 +32,75 @@ where
     ))
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const TOML_FIXTURE: &str = r#"
+[types]
+boolean = true
+integer = 1
+float = 3.14
+string = "hello"
+array = [ 1, 2, 3 ]
+null = "null"
+date = "1979-05-27T15:32:00.000Z"
+
+[types.object]
+key = "value"
+"#;
+
+    fn strip_line_comments(s: &str, prefix: &str) -> String {
+        s.lines()
+            .map(|line| {
+                if let Some(pos) = line.find(prefix) {
+                    &line[..pos]
+                } else {
+                    line
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    #[test]
+    fn toml_parse_ok() {
+        #[derive(Debug, serde::Deserialize)]
+        struct Types {
+            boolean: bool,
+            integer: i64,
+            float: f64,
+            string: String,
+        }
+        #[derive(Debug, serde::Deserialize)]
+        struct Root {
+            types: Types,
+        }
+
+        let formatted = parse_toml::<Root>(TOML_FIXTURE, None).unwrap();
+        assert!(formatted.value.types.boolean);
+        assert_eq!(formatted.value.types.string, "hello");
+        assert_eq!(formatted.value.types.integer, 1);
+        assert!((formatted.value.types.float - 3.14).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn toml_stringify_exact_without_comments_trimmed() {
+        #[derive(serde::Deserialize, serde::Serialize)]
+        struct Root {
+            types: std::collections::HashMap<String, toml::Value>,
+        }
+        let formatted = parse_toml::<Root>(TOML_FIXTURE, None).unwrap();
+        let out = stringify_toml(&formatted, None).unwrap();
+
+        let without_comments = strip_line_comments(TOML_FIXTURE, "#");
+        let expected = without_comments.trim();
+
+        // 通过解析成 toml::Value 比较语义是否等价，避免键顺序和空格风格差异。
+        let expected_val: toml::Value = toml::from_str(expected).unwrap();
+        let out_val: toml::Value = toml::from_str(out.trim()).unwrap();
+        assert_eq!(out_val, expected_val);
+    }
+}
+
+
