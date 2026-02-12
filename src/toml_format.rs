@@ -101,4 +101,19 @@ key = "value"
         let out_val: toml::Value = toml::from_str(out.trim()).unwrap();
         assert_eq!(out_val, expected_val);
     }
+
+    #[test]
+    fn toml_preserves_outer_whitespace() {
+        let text = " \n[section]\nkey = 1\n\n";
+        #[derive(serde::Deserialize, serde::Serialize)]
+        struct Sectioned {
+            section: std::collections::HashMap<String, toml::Value>,
+        }
+
+        let formatted = parse_toml::<Sectioned>(text, None).unwrap();
+        let out = stringify_toml(&formatted, None).unwrap();
+
+        assert!(out.starts_with(" \n"));
+        assert!(out.ends_with("\n\n"));
+    }
 }

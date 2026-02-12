@@ -87,4 +87,14 @@ mod tests {
         // 去掉首尾空白后的字符串相等。
         assert_eq!(out.trim(), expected_str.trim());
     }
+
+    #[test]
+    fn json5_preserves_outer_whitespace() {
+        let text = " \n{ types: { boolean: true } }\n\t";
+        let formatted = parse_json5::<JsonValue>(text, None).unwrap();
+        let out = stringify_json5(&formatted, None).unwrap();
+
+        assert!(out.starts_with(" \n"));
+        assert!(out.ends_with("\n\t"));
+    }
 }

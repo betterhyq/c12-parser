@@ -105,4 +105,36 @@ mod tests {
         let out_val: JsonValue = serde_json::from_str(&out).unwrap();
         assert_eq!(out_val, expected_val);
     }
+
+    #[test]
+    fn jsonc_respects_disallow_comments_flag() {
+        let opts = JsoncExtraOptions {
+            disallow_comments: true,
+            allow_trailing_comma: false,
+        };
+
+        let result = parse_jsonc(JSONC_FIXTURE, None, Some(opts));
+        assert!(result.is_err(), "expected error when comments are disallowed");
+    }
+
+    #[test]
+    fn jsonc_trailing_commas_controlled_by_flag() {
+        const TRAILING_COMMA: &str = r#"
+{
+  "a": 1,
+}
+"#;
+
+        // 默认不允许尾逗号，应当报错。
+        let res_default = parse_jsonc(TRAILING_COMMA, None, None);
+        assert!(res_default.is_err());
+
+        // 显式允许尾逗号，应当解析成功。
+        let opts = JsoncExtraOptions {
+            disallow_comments: false,
+            allow_trailing_comma: true,
+        };
+        let res_ok = parse_jsonc(TRAILING_COMMA, None, Some(opts));
+        assert!(res_ok.is_ok());
+    }
 }

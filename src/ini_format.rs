@@ -71,4 +71,25 @@ date = 1979-05-27T15:32:00.000Z
         let reparsed = parse_ini(&out);
         assert_eq!(reparsed, map);
     }
+
+    #[test]
+    fn ini_handles_default_section_without_header() {
+        let ini = r#"
+key1 = value1
+
+[section]
+key2 = value2
+"#;
+
+        let map = parse_ini(ini);
+
+        assert!(map.contains_key("default"));
+        let default = &map["default"];
+        assert_eq!(default.get("key1").and_then(|v| v.as_deref()), Some("value1"));
+
+        let out = stringify_ini(&map);
+        // 再次解析应与原结构一致。
+        let reparsed = parse_ini(&out);
+        assert_eq!(reparsed, map);
+    }
 }

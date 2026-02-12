@@ -110,4 +110,33 @@ mod tests {
         let expected_val: JsonValue = serde_json::from_str(JSON_FIXTURE).unwrap();
         assert_eq!(out_val, expected_val);
     }
+
+    #[test]
+    fn json_stringify_respects_explicit_indent() {
+        let formatted = parse_json::<JsonValue>(JSON_FIXTURE, None).unwrap();
+        let mut opts = FormatOptions::default();
+        opts.indent = Some(4);
+
+        let out = stringify_json(&formatted, Some(opts)).unwrap();
+
+        // 第一行是空行（前导换行），第二行应为带 4 个空格缩进的 "{".
+        let mut lines = out.lines();
+        assert_eq!(lines.next(), Some("")); // leading newline
+        if let Some(second) = lines.next() {
+            let prefix = &second[..4.min(second.len())];
+            assert_eq!(prefix, "    ");
+        } else {
+            panic!("expected at least two lines in JSON output");
+        }
+    }
+
+    #[test]
+    fn json_preserves_outer_whitespace() {
+        let text = " \n{ \"a\": 1 }\n\t";
+        let formatted = parse_json::<JsonValue>(text, None).unwrap();
+        let out = stringify_json(&formatted, None).unwrap();
+
+        assert!(out.starts_with(" \n"));
+        assert!(out.ends_with("\n\t"));
+    }
 }

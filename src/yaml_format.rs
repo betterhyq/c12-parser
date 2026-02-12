@@ -104,4 +104,14 @@ types:
         let out_val: serde_yaml::Value = serde_yaml::from_str(&out).unwrap();
         assert_eq!(out_val, expected_val);
     }
+
+    #[test]
+    fn yaml_preserves_outer_whitespace() {
+        let text = " \ntypes:\n  key: value\n\n";
+        let formatted = parse_yaml::<JsonValue>(text, None).unwrap();
+        let out = stringify_yaml(&formatted, None).unwrap();
+
+        assert!(out.starts_with(" \n"));
+        assert!(out.ends_with("\n\n"));
+    }
 }

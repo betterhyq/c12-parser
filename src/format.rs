@@ -112,3 +112,73 @@ impl<T> Formatted<T> {
         Self { value, format }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn detect_format_captures_outer_whitespace_and_sample() {
+        let text = "\n  {\"a\": 1}\n\n";
+        let opts = FormatOptions::default();
+        let info = detect_format(text, &opts);
+
+        // 由于使用的是基于正则的 `^(\s+)`，这里会把换行符和紧随其后的两个空格
+        // 一并视为“前导空白”捕获出来。
+        assert_eq!(info.whitespace_start, "\n  ");
+        assert_eq!(info.whitespace_end, "\n\n");
+        assert!(info.sample.is_some());
+        assert!(info.sample.as_ref().unwrap().contains("{\"a\": 1}"));
+    }
+
+    #[test]
+    fn detect_format_respects_preserve_flags() {
+        let text = "   {\"a\": 1}   ";
+        let mut opts = FormatOptions::default();
+        opts.preserve_whitespace = false;
+        opts.preserve_indentation = false;
+
+        let info = detect_format(text, &opts);
+        assert!(info.sample.is_none());
+        assert!(info.whitespace_start.is_empty());
+        assert!(info.whitespace_end.is_empty());
+    }
+
+    #[test]
+    fn compute_indent_prefers_explicit_indent() {
+        let info = FormatInfo {
+            sample: Some("  key: 1".into()),
+            whitespace_start: String::new(),
+            whitespace_end: String::new(),
+        };
+        let mut opts = FormatOptions::default();
+        opts.indent = Some(4);
+
+        assert_eq!(compute_indent(&info, &opts), 4);
+    }
+
+    #[test]
+    fn compute_indent_detects_from_sample() {
+        let info = FormatInfo {
+            sample: Some("  key: 1\n    child: 2".into()),
+            whitespace_start: String::new(),
+            whitespace_end: String::new(),
+        };
+        let opts = FormatOptions::default();
+
+        assert_eq!(compute_indent(&info, &opts), 2);
+    }
+
+    #[test]
+    fn compute_indent_falls_back_to_default() {
+        let info = FormatInfo {
+            sample: Some("\n\n".into()),
+            whitespace_start: String::new(),
+            whitespace_end: String::new(),
+        };
+        let opts = FormatOptions::default();
+
+        assert_eq!(compute_indent(&info, &opts), 2);
+    }
+}
+
