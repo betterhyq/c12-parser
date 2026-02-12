@@ -73,23 +73,11 @@ types:
 
     #[test]
     fn yaml_parse_ok() {
-        #[derive(Debug, serde::Deserialize)]
-        struct Types {
-            boolean: bool,
-            integer: i64,
-            float: f64,
-            string: String,
-        }
-        #[derive(Debug, serde::Deserialize)]
-        struct Root {
-            types: Types,
-        }
+        let formatted = parse_yaml::<serde_yaml::Value>(YAML_FIXTURE, None).unwrap();
+        let expected: serde_yaml::Value = serde_yaml::from_str(YAML_FIXTURE).unwrap();
 
-        let formatted = parse_yaml::<Root>(YAML_FIXTURE, None).unwrap();
-        assert!(formatted.value.types.boolean);
-        assert_eq!(formatted.value.types.string, "hello");
-        assert_eq!(formatted.value.types.integer, 1);
-        assert!((formatted.value.types.float - 3.14).abs() < f64::EPSILON);
+        // Compare the full YAML value so that every field in the fixture is validated.
+        assert_eq!(formatted.value, expected);
     }
 
     #[test]

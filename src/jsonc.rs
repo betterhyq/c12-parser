@@ -88,8 +88,46 @@ mod tests {
 
     #[test]
     fn jsonc_parse_ok() {
-        let formatted = parse_jsonc(JSONC_FIXTURE, None, None).unwrap();
-        assert!(formatted.value["types"]["boolean"].as_bool().unwrap());
+        #[derive(Debug, serde::Deserialize, serde::Serialize)]
+        struct Types {
+            boolean: bool,
+            integer: i64,
+            float: f64,
+            string: String,
+            array: Vec<i64>,
+            object: serde_json::Value,
+            null: Option<serde_json::Value>,
+            date: String,
+        }
+
+        #[derive(Debug, serde::Deserialize, serde::Serialize)]
+        struct Root {
+            types: Types,
+        }
+
+        let formatted = parse_jsonc(JSONC_FIXTURE, None, None)
+            .unwrap()
+            .value;
+
+        // 去掉注释后，用 serde_json 解析一次，作为“期望结构”。
+        let without_comments = strip_line_comments(JSONC_FIXTURE, "//");
+        let expected: Root = serde_json::from_str(&without_comments).unwrap();
+
+        // 对每一个字段单独断言，确保结构体里的所有值都解析正确。
+        assert!(expected.types.boolean);
+        assert_eq!(expected.types.integer, 1);
+        assert!((expected.types.float - 3.14).abs() < f64::EPSILON);
+        assert_eq!(expected.types.string, "hello");
+        assert_eq!(expected.types.array, vec![1, 2, 3]);
+        assert_eq!(expected.types.object["key"].as_str(), Some("value"));
+        assert!(expected.types.null.is_none());
+        assert_eq!(
+            expected.types.date,
+            "1979-05-27T07:32:00-08:00".to_string()
+        );
+
+        // 同时也验证 parse_jsonc 的输出整体结构与期望完全一致。
+        assert_eq!(formatted, serde_json::to_value(&expected).unwrap());
     }
 
     #[test]

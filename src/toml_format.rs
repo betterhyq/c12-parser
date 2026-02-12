@@ -65,23 +65,33 @@ key = "value"
 
     #[test]
     fn toml_parse_ok() {
-        #[derive(Debug, serde::Deserialize)]
+        #[derive(Debug, serde::Deserialize, serde::Serialize, PartialEq)]
         struct Types {
             boolean: bool,
             integer: i64,
             float: f64,
             string: String,
+            array: Vec<i64>,
+            null: String,
+            date: String,
+            object: Object,
         }
-        #[derive(Debug, serde::Deserialize)]
+
+        #[derive(Debug, serde::Deserialize, serde::Serialize, PartialEq)]
+        struct Object {
+            key: String,
+        }
+
+        #[derive(Debug, serde::Deserialize, serde::Serialize, PartialEq)]
         struct Root {
             types: Types,
         }
 
         let formatted = parse_toml::<Root>(TOML_FIXTURE, None).unwrap();
-        assert!(formatted.value.types.boolean);
-        assert_eq!(formatted.value.types.string, "hello");
-        assert_eq!(formatted.value.types.integer, 1);
-        assert!((formatted.value.types.float - 3.14).abs() < f64::EPSILON);
+        let expected: Root = toml::from_str(TOML_FIXTURE).unwrap();
+
+        // Ensure we match the full logical structure (all keys in the fixture).
+        assert_eq!(formatted.value, expected);
     }
 
     #[test]
