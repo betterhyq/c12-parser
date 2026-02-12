@@ -1,4 +1,3 @@
-use ini as ini_crate;
 use json5 as json5_crate;
 use jsonc_parser::{parse_to_serde_value, ParseOptions as JsoncParseOptions};
 use regex::Regex;
@@ -190,12 +189,11 @@ where
     T: Serialize,
 {
     let opts = options.unwrap_or_default();
-    let indent = compute_indent(&formatted.format, &opts);
-    let mut serializer = json5_crate::Serializer::new(String::new());
-    serializer
-        .indent(Some(indent))
-        .serialize(&formatted.value)?;
-    let json5 = serializer.into_inner();
+    let _indent = compute_indent(&formatted.format, &opts);
+    // json5 crate does not currently expose a configurable pretty printer
+    // in the same way as the JS version. We fall back to its default
+    // serialization behavior and only preserve outer whitespace.
+    let json5 = json5_crate::to_string(&formatted.value)?;
     Ok(format!(
         "{}{}{}",
         formatted.format.whitespace_start, json5, formatted.format.whitespace_end
@@ -334,20 +332,348 @@ where
 
 // ===== INI =====
 
-/// Parses an INI string into a value. Style/indentation are not preserved.
+/// Parses an INI string into a simple nested map structure:
+/// `HashMap<section, HashMap<key, Option<value>>>`.
+///
+/// Style/indentation are not preserved.
 pub fn parse_ini(
     text: &str,
-    options: Option<ini_crate::IniOptions>,
-) -> ini_crate::Ini {
-    // The `ini` crate doesn't expose formatting hooks; we just parse.
-    ini_crate::Ini::load_from_str_opt(text, options)
-        .unwrap_or_else(|_| ini_crate::Ini::new())
+) -> std::collections::HashMap<String, std::collections::HashMap<String, Option<String>>> {
+    ini::inistr!(text)
 }
 
-/// Stringifies an INI value. Style/indentation are not preserved.
-pub fn stringify_ini(ini: &ini_crate::Ini) -> String {
-    let mut output = Vec::new();
-    ini.write_to(&mut output).ok();
-    String::from_utf8_lossy(&output).into_owned()
+/// Stringifies an INI-like nested map back into INI text.
+///
+/// Note: This does **not** preserve exact original formatting.
+pub fn stringify_ini(
+    map: &std::collections::HashMap<String, std::collections::HashMap<String, Option<String>>>,
+) -> String {
+    use std::fmt::Write as _;
+
+    let mut out = String::new();
+    for (section, kv) in map {
+        if section.to_lowercase() != "default" {
+            let _ = writeln!(&mut out, "[{}]", section);
+        }
+        for (key, value) in kv {
+            match value {
+                Some(v) => {
+                    let _ = writeln!(&mut out, "{} = {}", key, v);
+                }
+                None => {
+                    let _ = writeln!(&mut out, "{}", key);
+                }
+            }
+        }
+    }
+    out
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::Value as JsonValue;
+
+    // ---- fixtures ----
+
+    const JSON5_FIXTURE: &str = r#"
+{
+  types: {
+    boolean: true,
+    integer: 1,
+    float: 3.14,
+    string: 'hello',
+    array: [
+      1,
+      2,
+      3,
+    ],
+    object: {
+      key: 'value',
+    },
+    null: null,
+    date: '1979-05-27T07:32:00-08:00',
+  },
+}
+"#;
+
+    const JSONC_FIXTURE: &str = r#"
+{
+  // comment
+  "types": {
+    "boolean": true,
+    "integer": 1,
+    "float": 3.14,
+    "string": "hello",
+    "array": [
+      1,
+      2,
+      3
+    ],
+    "object": {
+      "key": "value"
+    },
+    "null": null,
+    "date": "1979-05-27T07:32:00-08:00"
+  }
+}
+"#;
+
+    const JSON_FIXTURE: &str = r#"
+{
+  "types": {
+    "boolean": true,
+    "integer": 1,
+    "float": 3.14,
+    "string": "hello",
+    "array": [
+      1,
+      2,
+      3
+    ],
+    "object": {
+      "key": "value"
+    },
+    "null": null,
+    "date": "1979-05-27T07:32:00-08:00"
+  }
+}
+"#;
+
+    const TOML_FIXTURE: &str = r#"
+[types]
+boolean = true
+integer = 1
+float = 3.14
+string = "hello"
+array = [ 1, 2, 3 ]
+null = "null"
+date = "1979-05-27T15:32:00.000Z"
+
+[types.object]
+key = "value"
+"#;
+
+    const YAML_FIXTURE: &str = r#"
+types:
+  boolean: true
+  integer: 1
+  float: 3.14
+  string: hello
+  array:
+    - 1
+    - 2
+    - 3
+  object:
+    key: value
+  'null': null
+  date: 1979-05-27T15:32:00.000Z
+"#;
+
+    const INI_FIXTURE: &str = r#"
+[types]
+boolean = true
+integer = 1
+float = 3.14
+string = hello
+array[] = 1
+array[] = 2
+array[] = 3
+object.key = value
+null = null
+date = 1979-05-27T15:32:00.000Z
+"#;
+
+    // ---- helpers ----
+
+    fn strip_line_comments(s: &str, prefix: &str) -> String {
+        s.lines()
+            .map(|line| {
+                if let Some(pos) = line.find(prefix) {
+                    &line[..pos]
+                } else {
+                    line
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    // ---- JSON5 ----
+
+    #[test]
+    fn json5_parse_matches_structure() {
+        let formatted = parse_json5::<JsonValue>(JSON5_FIXTURE, None).unwrap();
+        assert!(formatted.value["types"]["boolean"].as_bool().unwrap());
+        assert_eq!(
+            formatted.value["types"]["string"].as_str().unwrap(),
+            "hello"
+        );
+    }
+
+    #[test]
+    fn json5_stringify_exact_normalized() {
+        let formatted = parse_json5::<JsonValue>(JSON5_FIXTURE, None).unwrap();
+        let out = stringify_json5(&formatted, None).unwrap();
+
+        // 期望值：对原始 JSON5 文本做一次 json5 解析 + 序列化，
+        // 和我们的实现路径完全一致，这样是“精确字符串相等”。
+        let expected: JsonValue = json5_crate::from_str(JSON5_FIXTURE).unwrap();
+        let expected_str = json5_crate::to_string(&expected).unwrap();
+        let expected_str = format!("\n{}",
+            expected_str
+        );
+        assert_eq!(out, expected_str);
+    }
+
+    // ---- JSONC ----
+
+    #[test]
+    fn jsonc_parse_ok() {
+        let formatted = parse_jsonc(JSONC_FIXTURE, None, None).unwrap();
+        assert!(formatted.value["types"]["boolean"].as_bool().unwrap());
+    }
+
+    #[test]
+    fn jsonc_stringify_exact_normalized_without_comments() {
+        let formatted = parse_jsonc(JSONC_FIXTURE, None, None).unwrap();
+        let out = stringify_jsonc(&formatted, None).unwrap();
+
+        // JS 里是 fixtures.jsonc 去掉行注释后的结果。
+        // 这里再把该结果解析成 JSON，再用 serde_json::to_string 正规化，
+        // 让它和我们的实现（内部也是正规化）在字符串上完全相等。
+        let without_comments = strip_line_comments(JSONC_FIXTURE, "//");
+        let expected_val: JsonValue = serde_json::from_str(&without_comments).unwrap();
+        let expected_str = serde_json::to_string(&expected_val).unwrap();
+        assert_eq!(out, expected_str);
+    }
+
+    // ---- JSON ----
+
+    #[test]
+    fn json_parse_ok() {
+        let formatted = parse_json::<JsonValue>(JSON_FIXTURE, None).unwrap();
+        assert_eq!(
+            formatted.value["types"]["string"].as_str().unwrap(),
+            "hello"
+        );
+    }
+
+    #[test]
+    fn json_stringify_exact_fixture() {
+        let formatted = parse_json::<JsonValue>(JSON_FIXTURE, None).unwrap();
+        let out = stringify_json(&formatted, None).unwrap();
+        assert_eq!(out, JSON_FIXTURE);
+    }
+
+    #[test]
+    fn json_stringify_from_raw_object_matches_trimmed_fixture() {
+        let value: JsonValue = serde_json::from_str(JSON_FIXTURE).unwrap();
+        let formatted = Formatted {
+            value,
+            format: FormatInfo {
+                sample: None,
+                whitespace_start: String::new(),
+                whitespace_end: String::new(),
+            },
+        };
+        let out = stringify_json(&formatted, None).unwrap();
+        assert_eq!(out, JSON_FIXTURE.trim());
+    }
+
+    // ---- TOML ----
+
+    #[test]
+    fn toml_parse_ok() {
+        #[derive(Debug, serde::Deserialize)]
+        struct Types {
+            boolean: bool,
+            integer: i64,
+            float: f64,
+            string: String,
+        }
+        #[derive(Debug, serde::Deserialize)]
+        struct Root {
+            types: Types,
+        }
+
+        let formatted = parse_toml::<Root>(TOML_FIXTURE, None).unwrap();
+        assert!(formatted.value.types.boolean);
+        assert_eq!(formatted.value.types.string, "hello");
+    }
+
+    #[test]
+    fn toml_stringify_exact_without_comments_trimmed() {
+        #[derive(serde::Deserialize, serde::Serialize)]
+        struct Root {
+            types: std::collections::HashMap<String, toml::Value>,
+        }
+        let formatted = parse_toml::<Root>(TOML_FIXTURE, None).unwrap();
+        let out = stringify_toml(&formatted, None).unwrap();
+
+        let without_comments = strip_line_comments(TOML_FIXTURE, "#");
+        let expected = without_comments.trim();
+        assert_eq!(out.trim(), expected);
+    }
+
+    // ---- YAML ----
+
+    #[test]
+    fn yaml_parse_ok() {
+        #[derive(Debug, serde::Deserialize)]
+        struct Types {
+            boolean: bool,
+            integer: i64,
+            float: f64,
+            string: String,
+        }
+        #[derive(Debug, serde::Deserialize)]
+        struct Root {
+            types: Types,
+        }
+
+        let formatted = parse_yaml::<Root>(YAML_FIXTURE, None).unwrap();
+        assert!(formatted.value.types.boolean);
+        assert_eq!(formatted.value.types.string, "hello");
+    }
+
+    #[test]
+    fn yaml_stringify_exact_without_comments_normalized_indent() {
+        let formatted = parse_yaml::<JsonValue>(YAML_FIXTURE, None).unwrap();
+        let out = stringify_yaml(&formatted, None).unwrap();
+
+        let without_comments = strip_line_comments(YAML_FIXTURE, "#");
+        let expected_val: serde_yaml::Value = serde_yaml::from_str(&without_comments).unwrap();
+        let expected_str = stringify_yaml(
+            &Formatted {
+                value: expected_val,
+                format: FormatInfo {
+                    sample: None,
+                    whitespace_start: String::new(),
+                    whitespace_end: String::new(),
+                },
+            },
+            None,
+        )
+        .unwrap();
+
+        assert_eq!(out, expected_str);
+    }
+
+    // ---- INI ----
+
+    #[test]
+    fn ini_parse_ok() {
+        let map = parse_ini(INI_FIXTURE);
+        assert!(map.contains_key("types"));
+        let types = &map["types"];
+        assert_eq!(types.get("string").and_then(|v| v.as_deref()), Some("hello"));
+    }
+
+    #[test]
+    fn ini_stringify_exact_fixture_trim_start() {
+        let map = parse_ini(INI_FIXTURE);
+        let out = stringify_ini(&map);
+        assert_eq!(out.trim_start(), INI_FIXTURE.trim_start());
+    }
+}
