@@ -88,10 +88,16 @@ key = "value"
         }
 
         let formatted = parse_toml::<Root>(TOML_FIXTURE, None).unwrap();
-        let expected: Root = toml::from_str(TOML_FIXTURE).unwrap();
 
-        // Ensure we match the full logical structure (all keys in the fixture).
-        assert_eq!(formatted.value, expected);
+        // Manually verify each field to avoid relying on `toml::from_str` for expectations.
+        assert_eq!(formatted.value.types.boolean, true);
+        assert_eq!(formatted.value.types.integer, 1);
+        assert!((formatted.value.types.float - 3.14).abs() < f64::EPSILON);
+        assert_eq!(formatted.value.types.string, "hello");
+        assert_eq!(formatted.value.types.array, vec![1, 2, 3]);
+        assert_eq!(formatted.value.types.null, "null");
+        assert_eq!(formatted.value.types.date, "1979-05-27T15:32:00.000Z");
+        assert_eq!(formatted.value.types.object.key, "value");
     }
 
     #[test]
