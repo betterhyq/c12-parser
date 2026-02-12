@@ -8,7 +8,7 @@ readme = "README.md"
 homepage = "https://github.com/betterhyq/c12-parser"
 repository = "https://github.com/betterhyq/c12-parser.git"
 license = "MIT"
-keywords = ["configuration", "parser", "json", "yaml", "toml", "ini"]
+keywords = ["configuration", "parser", "json", "yaml", "toml"]
 categories = ["development-tools"]
 
 [dependencies]
