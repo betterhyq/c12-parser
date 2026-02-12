@@ -1,0 +1,21 @@
+{
+  "scripts": {
+    "build": "cargo build",
+    "build:release": "cargo build --release",
+    "format": "cargo fmt",
+    "test": "cargo test -- --show-output",
+    "start": "node scripts/packageName.mjs"
+  },
+  "simple-git-hooks": {
+    "pre-push": "pnpm format"
+  },
+  "dependencies": {
+    "prompts": "2.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "25.2.3",
+    "@types/prompts": "2.4.9",
+    "simple-git-hooks": "2.13.1"
+  },
+  "packageManager": "pnpm@10.28.0"
+}
