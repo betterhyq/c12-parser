@@ -1,3 +1,4 @@
+use once_cell::sync::Lazy;
 use regex::Regex;
 
 /// Information about formatting (indentation and outer whitespace)
@@ -13,11 +14,11 @@ pub struct FormatInfo {
 #[derive(Clone, Debug)]
 pub struct FormatOptions {
     /// Explicit indent to use when stringifying. When `None`,
-    /// indentation may be auto-detected from the original text.
+    /// indentation is auto-detected from the original text (if enabled).
     pub indent: Option<usize>,
 
     /// If `false`, indentation from the original text will not be
-    /// auto-detected.
+    /// auto-detected, even if a sample is present.
     pub preserve_indentation: bool,
 
     /// If `false`, leading and trailing whitespace around the value
@@ -47,17 +48,16 @@ pub(crate) fn detect_format(text: &str, opts: &FormatOptions) -> FormatInfo {
         None
     };
 
-    let (whitespace_start, whitespace_end) = if opts.preserve_whitespace {
-        // Leading whitespace
-        let start_re = Regex::new(r"^(\s+)").unwrap();
-        let end_re = Regex::new(r"(\s+)$").unwrap();
+    static START_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"^(\s+)").unwrap());
+    static END_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"(\s+)$").unwrap());
 
-        let ws_start = start_re
+    let (whitespace_start, whitespace_end) = if opts.preserve_whitespace {
+        let ws_start = START_RE
             .captures(text)
             .and_then(|c| c.get(0))
             .map(|m| m.as_str().to_string())
             .unwrap_or_default();
-        let ws_end = end_re
+        let ws_end = END_RE
             .captures(text)
             .and_then(|c| c.get(0))
             .map(|m| m.as_str().to_string())

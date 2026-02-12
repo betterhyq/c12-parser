@@ -88,8 +88,6 @@ key = "value"
         }
 
         let formatted = parse_toml::<Root>(TOML_FIXTURE, None).unwrap();
-
-        // Manually verify each field to avoid relying on `toml::from_str` for expectations.
         assert_eq!(formatted.value.types.boolean, true);
         assert_eq!(formatted.value.types.integer, 1);
         assert!((formatted.value.types.float - 3.14).abs() < f64::EPSILON);
@@ -112,7 +110,6 @@ key = "value"
         let without_comments = strip_line_comments(TOML_FIXTURE, "#");
         let expected = without_comments.trim();
 
-        // 通过解析成 toml::Value 比较语义是否等价，避免键顺序和空格风格差异。
         let expected_val: toml::Value = toml::from_str(expected).unwrap();
         let out_val: toml::Value = toml::from_str(out.trim()).unwrap();
         assert_eq!(out_val, expected_val);

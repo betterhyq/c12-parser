@@ -23,17 +23,19 @@ where
     let opts = options.unwrap_or_default();
     let indent = compute_indent(&formatted.format, &opts);
     let json = serde_json::to_string_pretty(&formatted.value)?;
+    let indent_str = " ".repeat(indent);
+
     let indented = json
         .lines()
         .map(|line| {
             if line.is_empty() {
                 line.to_string()
             } else {
-                let mut s = String::new();
-                for _ in 0..indent {
-                    s.push(' ');
-                }
-                s + line.trim_start()
+                let trimmed = line.trim_start();
+                let mut s = String::with_capacity(indent_str.len() + trimmed.len());
+                s.push_str(&indent_str);
+                s.push_str(trimmed);
+                s
             }
         })
         .collect::<Vec<_>>()
@@ -91,8 +93,6 @@ mod tests {
         }
 
         let formatted = parse_json::<Root>(JSON_FIXTURE, None).unwrap();
-
-        // 对每一个字段单独断言，确保结构体里的所有值都解析正确。
         assert!(formatted.value.types.boolean);
         assert_eq!(formatted.value.types.integer, 1);
         assert!((formatted.value.types.float - 3.14).abs() < f64::EPSILON);
@@ -110,9 +110,6 @@ mod tests {
     fn json_stringify_exact_fixture() {
         let formatted = parse_json::<JsonValue>(JSON_FIXTURE, None).unwrap();
         let out = stringify_json(&formatted, None).unwrap();
-
-        // 比较两边解析后的 JSON 值是否等价，而不是逐字符一致，
-        // 以规避键顺序和缩进风格差异。
         let out_val: JsonValue = serde_json::from_str(&out).unwrap();
         let expected_val: JsonValue = serde_json::from_str(JSON_FIXTURE).unwrap();
         assert_eq!(out_val, expected_val);
@@ -130,8 +127,6 @@ mod tests {
             },
         };
         let out = stringify_json(&formatted, None).unwrap();
-
-        // 同样比较解析后的值是否等价即可，不再要求字符串完全一致。
         let out_val: JsonValue = serde_json::from_str(&out).unwrap();
         let expected_val: JsonValue = serde_json::from_str(JSON_FIXTURE).unwrap();
         assert_eq!(out_val, expected_val);
@@ -147,7 +142,7 @@ mod tests {
 
         // 第一行是空行（前导换行），第二行应为带 4 个空格缩进的 "{".
         let mut lines = out.lines();
-        assert_eq!(lines.next(), Some("")); // leading newline
+        assert_eq!(lines.next(), Some(""));
         if let Some(second) = lines.next() {
             let prefix = &second[..4.min(second.len())];
             assert_eq!(prefix, "    ");

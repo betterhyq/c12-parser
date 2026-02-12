@@ -91,8 +91,6 @@ mod tests {
         let formatted = parse_jsonc(JSONC_FIXTURE, None, None).unwrap().value;
 
         let types = &formatted["types"];
-
-        // 对每一个字段单独断言，直接基于 formatted 做检查。
         assert_eq!(types["boolean"], JsonValue::Bool(true));
         assert_eq!(types["integer"], JsonValue::from(1));
         assert!((types["float"].as_f64().unwrap() - 3.14).abs() < f64::EPSILON);
@@ -107,10 +105,6 @@ mod tests {
     fn jsonc_stringify_exact_normalized_without_comments() {
         let formatted = parse_jsonc(JSONC_FIXTURE, None, None).unwrap();
         let out = stringify_jsonc(&formatted, None).unwrap();
-
-        // JS 里是 fixtures.jsonc 去掉行注释后的结果。
-        // 这里再把该结果解析成 JSON，比较“值”等价，而不是要求序列化后的
-        // 字符串逐字符一致（不同实现的 pretty-print 策略可能不同）。
         let without_comments = strip_line_comments(JSONC_FIXTURE, "//");
         let expected_val: JsonValue = serde_json::from_str(&without_comments).unwrap();
         let out_val: JsonValue = serde_json::from_str(&out).unwrap();

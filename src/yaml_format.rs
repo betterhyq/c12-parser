@@ -76,8 +76,6 @@ types:
         let formatted = parse_yaml::<serde_yaml::Value>(YAML_FIXTURE, None).unwrap();
         let root = formatted.value;
 
-        // Manually verify each field under `types` instead of using `serde_yaml::from_str`
-        // to build the expected value.
         let types = root
             .get("types")
             .expect("types key should exist")
@@ -129,7 +127,6 @@ types:
         let without_comments = strip_line_comments(YAML_FIXTURE, "#");
         let expected_val: serde_yaml::Value = serde_yaml::from_str(&without_comments).unwrap();
 
-        // 直接比较解析后的 YAML 值是否等价，避免键顺序和缩进实现差异。
         let out_val: serde_yaml::Value = serde_yaml::from_str(&out).unwrap();
         assert_eq!(out_val, expected_val);
     }
