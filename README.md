@@ -4,6 +4,16 @@
 ![Crates.io Total Downloads](https://img.shields.io/crates/d/c12-parser)
 ![Crates.io License](https://img.shields.io/crates/l/c12-parser)
 
+## Installation
+
+Add this crate by cargo
+
+```bash
+cargo add c12-parser
+```
+
+## Usage
+
 ## Contribution
 
 <details>
