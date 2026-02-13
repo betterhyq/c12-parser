@@ -77,3 +77,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 Published under the [MIT](./LICENSE) license.
 Made by [@YONGQI](https://github.com/betterhyq) 💛
+<br><br>
+<a href="https://github.com/betterhyq/c12-parser/graphs/contributors">
+<img src="https://contrib.rocks/image?repo=betterhyq/c12-parser" />
+</a>
