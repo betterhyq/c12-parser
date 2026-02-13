@@ -3,6 +3,7 @@
 ![Crates.io Version](https://img.shields.io/crates/v/c12-parser)
 ![Crates.io Total Downloads](https://img.shields.io/crates/d/c12-parser)
 ![Crates.io License](https://img.shields.io/crates/l/c12-parser)
+![docs.rs](https://img.shields.io/docsrs/c12-parser)
 ![GitHub Repo stars](https://img.shields.io/github/stars/betterhyq/c12-parser)
 
 `c12-parser` is a parser for C12 configuration files, support JSON, JSON5, JSONC, YAML, TOML, INI.
